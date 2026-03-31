@@ -1,9 +1,8 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Optional
 from datetime import datetime
 
 
-# Represents a pet in the system
 @dataclass
 class Pet:
     name: str
@@ -11,10 +10,14 @@ class Pet:
     age: int
 
     def update_info(self, name: Optional[str] = None, species: Optional[str] = None, age: Optional[int] = None):
-        pass
+        if name:
+            self.name = name
+        if species:
+            self.species = species
+        if age:
+            self.age = age
 
 
-# Represents a task (feeding, walking, vet visit, etc.)
 @dataclass
 class Task:
     title: str
@@ -24,31 +27,30 @@ class Task:
     completed: bool = False
 
     def mark_complete(self):
-        pass
+        self.completed = True
 
     def reschedule(self, new_time: datetime):
-        pass
+        self.time = new_time
 
 
-# Handles scheduling logic
 class Scheduler:
     def __init__(self):
         self.tasks: List[Task] = []
 
     def add_task(self, task: Task):
-        pass
+        self.tasks.append(task)
 
     def remove_task(self, task: Task):
-        pass
+        if task in self.tasks:
+            self.tasks.remove(task)
 
     def get_tasks_for_day(self, date: datetime):
-        pass
+        return [task for task in self.tasks if task.time.date() == date.date()]
 
     def prioritize_tasks(self):
-        pass
+        self.tasks.sort(key=lambda t: (t.time, t.priority))
 
 
-# Represents the user of the app
 class User:
     def __init__(self, name: str):
         self.name = name
@@ -56,13 +58,14 @@ class User:
         self.scheduler = Scheduler()
 
     def add_pet(self, pet: Pet):
-        pass
+        self.pets.append(pet)
 
     def remove_pet(self, pet: Pet):
-        pass
+        if pet in self.pets:
+            self.pets.remove(pet)
 
     def add_task(self, task: Task):
-        pass
+        self.scheduler.add_task(task)
 
     def view_tasks(self, date: datetime):
-        pass
+        return self.scheduler.get_tasks_for_day(date)
