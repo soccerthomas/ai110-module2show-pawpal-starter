@@ -1,36 +1,53 @@
 from datetime import datetime
 from pawpal_system import Pet, Task, User
 
-# Create user
 owner = User("Alex")
 
-# Create pets
-pet1 = Pet("Buddy", "Dog", 3)
-pet2 = Pet("Whiskers", "Cat", 2)
+# pets
+dog = Pet("Buddy", "Dog", 3)
+cat = Pet("Whiskers", "Cat", 2)
 
-# Add pets
-owner.add_pet(pet1)
-owner.add_pet(pet2)
+owner.add_pet(dog)
+owner.add_pet(cat)
 
-# Create tasks
-task1 = Task("Morning Walk", pet1, datetime.now().replace(hour=9, minute=0), 1)
-task2 = Task("Feed Cat", pet2, datetime.now().replace(hour=8, minute=30), 2)
-task3 = Task("Vet Appointment", pet1, datetime.now().replace(hour=14, minute=0), 1)
+# tasks (intentionally out of order + conflict)
+t1 = Task("Vet Visit", dog, datetime.now().replace(hour=14, minute=0), 1)
+t2 = Task("Feed Cat", cat, datetime.now().replace(hour=8, minute=30), 2, frequency="daily")
+t3 = Task("Morning Walk", dog, datetime.now().replace(hour=9, minute=0), 1)
+t4 = Task("Grooming", dog, datetime.now().replace(hour=9, minute=0), 2)  # conflict
 
-# Add tasks
-owner.add_task(task1)
-owner.add_task(task2)
-owner.add_task(task3)
+owner.add_task(t1)
+owner.add_task(t2)
+owner.add_task(t3)
+owner.add_task(t4)
 
-# Get today's tasks
-tasks_today = owner.view_tasks(datetime.now())
+print("Sorted Schedule:\n")
+sorted_tasks = owner.scheduler.sort_by_time()
 
-# Sort tasks by time
-tasks_today.sort(key=lambda t: t.time)
+for task in sorted_tasks:
+    print(f"{task.time.strftime('%I:%M %p')} - {task.title} ({task.pet.name})")
 
-# Print schedule
-print("Today's Schedule:\n")
+# filtering example
+print("\nOnly Buddy's tasks:\n")
+filtered = owner.scheduler.filter_tasks(pet_name="Buddy")
 
-for task in tasks_today:
-    time_str = task.time.strftime("%I:%M %p")
-    print(f"{time_str} - {task.title} for {task.pet.name} (Priority {task.priority})")
+for task in filtered:
+    print(f"{task.time.strftime('%I:%M %p')} - {task.title}")
+
+# mark complete (triggers recurring)
+print("\nMarking 'Feed Cat' complete (daily task)...\n")
+owner.scheduler.mark_task_complete(t2)
+
+print("All tasks after recurrence:\n")
+for task in owner.scheduler.sort_by_time():
+    print(f"{task.time.strftime('%m/%d %I:%M %p')} - {task.title}")
+
+# conflict detection
+print("\nConflict Check:\n")
+conflicts = owner.scheduler.detect_conflicts()
+
+if conflicts:
+    for c in conflicts:
+        print(c)
+else:
+    print("No conflicts found.")
