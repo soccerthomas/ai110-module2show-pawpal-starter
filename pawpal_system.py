@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 @dataclass
@@ -9,14 +9,6 @@ class Pet:
     species: str
     age: int
 
-    def update_info(self, name: Optional[str] = None, species: Optional[str] = None, age: Optional[int] = None):
-        if name:
-            self.name = name
-        if species:
-            self.species = species
-        if age:
-            self.age = age
-
 
 @dataclass
 class Task:
@@ -24,13 +16,11 @@ class Task:
     pet: Pet
     time: datetime
     priority: int
+    frequency: Optional[str] = None  # "daily", "weekly", or None
     completed: bool = False
 
     def mark_complete(self):
         self.completed = True
-
-    def reschedule(self, new_time: datetime):
-        self.time = new_time
 
 
 class Scheduler:
@@ -40,15 +30,58 @@ class Scheduler:
     def add_task(self, task: Task):
         self.tasks.append(task)
 
-    def remove_task(self, task: Task):
-        if task in self.tasks:
-            self.tasks.remove(task)
+    def sort_by_time(self):
+        return sorted(self.tasks, key=lambda t: t.time)
 
-    def get_tasks_for_day(self, date: datetime):
-        return [task for task in self.tasks if task.time.date() == date.date()]
+    def filter_tasks(self, pet_name: Optional[str] = None, completed: Optional[bool] = None):
+        result = self.tasks
 
-    def prioritize_tasks(self):
-        self.tasks.sort(key=lambda t: (t.time, t.priority))
+        if pet_name is not None:
+            result = [t for t in result if t.pet.name == pet_name]
+
+        if completed is not None:
+            result = [t for t in result if t.completed == completed]
+
+        return result
+
+    def mark_task_complete(self, task: Task):
+        task.mark_complete()
+
+        # handle recurring tasks
+        if task.frequency == "daily":
+            new_task = Task(
+                title=task.title,
+                pet=task.pet,
+                time=task.time + timedelta(days=1),
+                priority=task.priority,
+                frequency=task.frequency
+            )
+            self.add_task(new_task)
+
+        elif task.frequency == "weekly":
+            new_task = Task(
+                title=task.title,
+                pet=task.pet,
+                time=task.time + timedelta(weeks=1),
+                priority=task.priority,
+                frequency=task.frequency
+            )
+            self.add_task(new_task)
+
+    def detect_conflicts(self):
+        warnings = []
+
+        for i in range(len(self.tasks)):
+            for j in range(i + 1, len(self.tasks)):
+                t1 = self.tasks[i]
+                t2 = self.tasks[j]
+
+                if t1.time == t2.time:
+                    warnings.append(
+                        f"Conflict: '{t1.title}' and '{t2.title}' are scheduled at the same time ({t1.time.strftime('%I:%M %p')})"
+                    )
+
+        return warnings
 
 
 class User:
@@ -60,12 +93,5 @@ class User:
     def add_pet(self, pet: Pet):
         self.pets.append(pet)
 
-    def remove_pet(self, pet: Pet):
-        if pet in self.pets:
-            self.pets.remove(pet)
-
     def add_task(self, task: Task):
         self.scheduler.add_task(task)
-
-    def view_tasks(self, date: datetime):
-        return self.scheduler.get_tasks_for_day(date)
